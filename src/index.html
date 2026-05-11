@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' file:; style-src 'self' 'unsafe-inline'; script-src 'self';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codex Pets Viewer</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main id="stage" aria-live="polite">
+      <div id="sprite" role="img" aria-label="Animated pet"></div>
+      <section id="chrome" aria-label="Pet controls">
+        <button id="prevPet" title="Previous pet" aria-label="Previous pet">&lt;</button>
+        <button id="zoomOut" title="Smaller" aria-label="Smaller">-</button>
+        <button id="zoomIn" title="Bigger" aria-label="Bigger">+</button>
+        <button id="nextAnimation" title="Next animation" aria-label="Next animation">A</button>
+        <button id="nextPet" title="Next pet" aria-label="Next pet">&gt;</button>
+        <button id="menu" title="Menu" aria-label="Menu">...</button>
+        <button id="minimize" title="Minimize" aria-label="Minimize">_</button>
+        <button id="close" title="Close" aria-label="Close">x</button>
+      </section>
+      <p id="label"></p>
+      <div id="resizeHandle" title="Resize" aria-hidden="true"></div>
+      <p id="empty" hidden>No pets found.</p>
+    </main>
+    <script src="./renderer.js"></script>
+  </body>
+</html>

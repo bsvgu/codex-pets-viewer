@@ -1,0 +1,152 @@
+:root {
+  --button-bg: rgba(18, 20, 28, 0.74);
+  --button-hover: rgba(52, 58, 74, 0.9);
+  --button-border: rgba(255, 255, 255, 0.18);
+  --text: rgba(255, 255, 255, 0.94);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: var(--text);
+  user-select: none;
+}
+
+body {
+  display: grid;
+  place-items: center;
+}
+
+#stage {
+  position: relative;
+  display: grid;
+  width: 100vw;
+  height: 100vh;
+  place-items: center;
+  cursor: move;
+  -webkit-app-region: no-drag;
+}
+
+#sprite {
+  width: var(--sprite-width, 192px);
+  height: var(--sprite-height, 208px);
+  background-repeat: no-repeat;
+  background-size: var(--sprite-sheet-width, 1536px) var(--sprite-sheet-height, 1872px);
+  image-rendering: pixelated;
+}
+
+#chrome {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  display: flex;
+  max-width: calc(100vw - 16px);
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(3px, 1.6vw, 6px);
+  padding: clamp(3px, 1.6vw, 5px);
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  background: rgba(9, 10, 14, 0.54);
+  opacity: 0;
+  transform: translateX(-50%) translateY(-6px);
+  transition: opacity 140ms ease, transform 140ms ease;
+  pointer-events: none;
+  -webkit-app-region: no-drag;
+  cursor: default;
+}
+
+#stage:hover #chrome,
+#stage:focus-within #chrome {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+button {
+  display: grid;
+  width: clamp(18px, 8vw, 28px);
+  height: clamp(18px, 8vw, 28px);
+  place-items: center;
+  border: 1px solid var(--button-border);
+  border-radius: clamp(5px, 2vw, 7px);
+  background: var(--button-bg);
+  color: var(--text);
+  font: 700 clamp(9px, 3.4vw, 13px)/1 "Segoe UI", Arial, sans-serif;
+  outline: none;
+  cursor: default;
+}
+
+button:hover,
+button:focus-visible {
+  background: var(--button-hover);
+}
+
+#label {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  max-width: calc(100vw - 24px);
+  margin: 0;
+  padding: clamp(3px, 1.5vw, 5px) clamp(6px, 2vw, 10px) clamp(4px, 1.6vw, 6px);
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  background: rgba(9, 10, 14, 0.48);
+  color: var(--text);
+  font-size: clamp(9px, 3vw, 12px);
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translateX(-50%) translateY(4px);
+  transition: opacity 140ms ease, transform 140ms ease;
+  pointer-events: none;
+}
+
+#stage:hover #label,
+#stage:focus-within #label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+#resizeHandle {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: clamp(18px, 9vw, 24px);
+  height: clamp(18px, 9vw, 24px);
+  opacity: 0;
+  cursor: nwse-resize;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+}
+
+@media (max-width: 160px), (max-height: 160px) {
+  #chrome,
+  #label {
+    display: none;
+  }
+}
+
+#empty {
+  position: absolute;
+  inset: auto 18px 18px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(9, 10, 14, 0.76);
+  font-size: 13px;
+  text-align: center;
+  -webkit-app-region: no-drag;
+}

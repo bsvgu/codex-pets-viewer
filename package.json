@@ -1,0 +1,46 @@
+{
+  "name": "codex-pets-viewer",
+  "version": "1.0.0",
+  "description": "Standalone viewer for bundled Codex pet animations.",
+  "main": "src/main.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "Hakan",
+  "scripts": {
+    "start": "electron .",
+    "build": "set CSC_IDENTITY_AUTO_DISCOVERY=false&& electron-builder --win portable",
+    "build:win": "set CSC_IDENTITY_AUTO_DISCOVERY=false&& electron-builder --win portable"
+  },
+  "build": {
+    "appId": "local.codex-pets-viewer",
+    "productName": "Codex Pets Viewer",
+    "asar": true,
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "signAndEditExecutable": false,
+      "signExts": [
+        "!.exe"
+      ],
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^42.0.1",
+    "electron-builder": "^26.8.1"
+  }
+}
