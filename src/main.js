@@ -3,7 +3,7 @@ const https = require("https");
 const path = require("path");
 const { execFile } = require("child_process");
 const { pathToFileURL } = require("url");
-const { app, BrowserWindow, dialog, ipcMain, Menu, shell } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, Menu, screen, shell } = require("electron");
 const packageJson = require("../package.json");
 
 const DEFAULT_WINDOW_SIZE = 340;
@@ -420,22 +420,42 @@ function createWindow() {
   mainWindow.loadFile(appPath("src", "index.html"));
 }
 
+function getSettingsWindowBounds() {
+  const width = 460;
+  const height = 550;
+  const display = mainWindow ? screen.getDisplayMatching(mainWindow.getBounds()) : screen.getPrimaryDisplay();
+  const area = display.workArea;
+
+  return {
+    width,
+    height,
+    x: area.x + Math.round((area.width - width) / 2),
+    y: area.y + Math.round((area.height - height) / 2)
+  };
+}
+
 function openSettingsWindow() {
   if (settingsWindow) {
+    if (settingsWindow.isMinimized()) {
+      settingsWindow.restore();
+    }
+
+    settingsWindow.show();
     settingsWindow.focus();
     return;
   }
 
+  const bounds = getSettingsWindowBounds();
+
   settingsWindow = new BrowserWindow({
-    width: 460,
-    height: 550,
+    ...bounds,
     resizable: false,
     minimizable: false,
     maximizable: false,
     title: "Pet Aktion",
-    parent: mainWindow || undefined,
-    modal: false,
-    show: false,
+    backgroundColor: "#f6f7f9",
+    alwaysOnTop: true,
+    show: true,
     webPreferences: {
       preload: appPath("src", "preload.js"),
       contextIsolation: true,
@@ -443,11 +463,15 @@ function openSettingsWindow() {
     }
   });
 
-  settingsWindow.once("ready-to-show", () => settingsWindow?.show());
+  settingsWindow.setMenuBarVisibility(false);
   settingsWindow.on("closed", () => {
     settingsWindow = null;
   });
-  settingsWindow.loadFile(appPath("src", "settings.html"));
+  settingsWindow.loadFile(appPath("src", "settings.html")).catch((error) => {
+    dialog.showErrorBox("Pet Aktion", `Einstellungen konnten nicht geoeffnet werden:\n${error.message}`);
+    settingsWindow?.close();
+  });
+  settingsWindow.focus();
 }
 
 function setWindowSize(size, anchor = "center") {
