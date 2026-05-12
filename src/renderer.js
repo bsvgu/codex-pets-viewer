@@ -128,8 +128,8 @@ function currentWindowLayout() {
   const petBoxSize = currentPetBoxSize();
 
   return {
-    width: controlsVisible ? Math.max(petBoxSize, CONTROL_BAR_WIDTH) : petBoxSize,
-    height: controlsVisible ? petBoxSize + CONTROL_BAR_HEIGHT : petBoxSize
+    width: Math.max(petBoxSize, CONTROL_BAR_WIDTH),
+    height: petBoxSize + CONTROL_BAR_HEIGHT
   };
 }
 
@@ -138,13 +138,9 @@ function applyWindowLayout(anchor = "center") {
   return window.petViewer.setSize(layout.width, layout.height, anchor);
 }
 
-function nextFrame() {
-  return new Promise((resolve) => requestAnimationFrame(resolve));
-}
-
 function updateSpriteScale() {
   const petBoxSize = currentPetBoxSize();
-  const petAreaHeight = controlsVisible ? Math.max(1, window.innerHeight - CONTROL_BAR_HEIGHT) : window.innerHeight;
+  const petAreaHeight = Math.max(1, window.innerHeight - CONTROL_BAR_HEIGHT);
   const padding = clamp(petBoxSize * 0.1, 6, 18);
   const desiredScale = BASE_SPRITE_SCALE * (petBoxSize / DEFAULT_WINDOW_SIZE);
   const maxWidthScale = Math.max(0.1, (window.innerWidth - padding * 2) / ATLAS.cellWidth);
@@ -259,24 +255,13 @@ function showMenu() {
   window.petViewer.showMenu(currentPet()?.id || "");
 }
 
-async function setControlsVisible(visible) {
+function setControlsVisible(visible) {
   if (controlsVisible === visible) {
     return;
   }
 
   controlsVisible = visible;
-  els.stage.classList.remove("controls-visible");
-  await applyWindowLayout(controlsVisible ? "show-controls" : "hide-controls");
-  await nextFrame();
-  updateSpriteScale();
-
-  if (controlsVisible) {
-    await nextFrame();
-  }
-
-  if (controlsVisible) {
-    els.stage.classList.add("controls-visible");
-  }
+  els.stage.classList.toggle("controls-visible", controlsVisible);
 }
 
 function isControlTarget(target) {
@@ -403,7 +388,7 @@ els.resizeHandle.addEventListener("pointercancel", () => {
   resizeDrag = null;
 });
 window.addEventListener("resize", () => {
-  const petAreaHeight = controlsVisible ? Math.max(1, window.innerHeight - CONTROL_BAR_HEIGHT) : window.innerHeight;
+  const petAreaHeight = Math.max(1, window.innerHeight - CONTROL_BAR_HEIGHT);
   sizeScale = clamp(Math.min(window.innerWidth, petAreaHeight) / DEFAULT_WINDOW_SIZE, MIN_SIZE_SCALE, MAX_SIZE_SCALE);
   saveSizeScale();
   updateSpriteScale();

@@ -3,7 +3,7 @@
   --button-hover: rgba(52, 58, 74, 0.9);
   --button-border: rgba(255, 255, 255, 0.18);
   --text: rgba(255, 255, 255, 0.94);
-  --controls-space: 0px;
+  --controls-space: 44px;
 }
 
 * {
@@ -36,10 +36,6 @@ body {
   place-items: center;
   cursor: move;
   -webkit-app-region: no-drag;
-}
-
-#stage.controls-visible {
-  --controls-space: 44px;
 }
 
 #sprite {
