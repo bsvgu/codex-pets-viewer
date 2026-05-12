@@ -102,6 +102,7 @@ let sizeScale = readSizeScale();
 let resizeDrag = null;
 let moveDrag = null;
 let spriteScale = BASE_SPRITE_SCALE;
+let controlsVisible = false;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -233,6 +234,11 @@ function showMenu() {
   window.petViewer.showMenu(currentPet()?.id || "");
 }
 
+function setControlsVisible(visible) {
+  controlsVisible = visible;
+  els.stage.classList.toggle("controls-visible", controlsVisible);
+}
+
 function isControlTarget(target) {
   return Boolean(target.closest("button, #chrome, #resizeHandle"));
 }
@@ -286,6 +292,13 @@ els.stage.addEventListener("contextmenu", (event) => {
   event.preventDefault();
   showMenu();
 });
+els.stage.addEventListener("click", (event) => {
+  if (event.button !== 0 || isControlTarget(event.target)) {
+    return;
+  }
+
+  setControlsVisible(true);
+});
 els.stage.addEventListener("dblclick", (event) => {
   if (isControlTarget(event.target)) {
     return;
@@ -315,6 +328,9 @@ els.stage.addEventListener("pointerup", (event) => {
 });
 els.stage.addEventListener("pointercancel", () => {
   moveDrag = null;
+});
+els.stage.addEventListener("pointerleave", () => {
+  setControlsVisible(false);
 });
 els.stage.addEventListener("wheel", (event) => {
   event.preventDefault();

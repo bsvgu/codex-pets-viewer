@@ -65,8 +65,7 @@ body {
   cursor: default;
 }
 
-#stage:hover #chrome,
-#stage:focus-within #chrome {
+#stage.controls-visible #chrome {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
   pointer-events: auto;
@@ -114,8 +113,7 @@ button:focus-visible {
   pointer-events: none;
 }
 
-#stage:hover #label,
-#stage:focus-within #label {
+#stage.controls-visible #label {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
