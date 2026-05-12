@@ -90,8 +90,7 @@ const els = {
   settings: document.getElementById("settings"),
   menu: document.getElementById("menu"),
   minimize: document.getElementById("minimize"),
-  close: document.getElementById("close"),
-  resizeHandle: document.getElementById("resizeHandle")
+  close: document.getElementById("close")
 };
 
 let pets = [];
@@ -101,7 +100,6 @@ let frameIndex = 0;
 let completedLoops = 0;
 let timer = null;
 let sizeScale = readSizeScale();
-let resizeDrag = null;
 let moveDrag = null;
 let spriteScale = BASE_SPRITE_SCALE;
 let controlsVisible = false;
@@ -265,11 +263,15 @@ function setControlsVisible(visible) {
 }
 
 function isControlTarget(target) {
-  return Boolean(target.closest("button, #chrome, #resizeHandle"));
+  return Boolean(target.closest("button, #chrome"));
+}
+
+function isSpriteTarget(target) {
+  return target === els.sprite;
 }
 
 async function startMoveDrag(event) {
-  if (event.button !== 0 || isControlTarget(event.target)) {
+  if (event.button !== 0 || isControlTarget(event.target) || !isSpriteTarget(event.target)) {
     return;
   }
 
@@ -318,14 +320,14 @@ els.stage.addEventListener("contextmenu", (event) => {
   showMenu();
 });
 els.stage.addEventListener("click", (event) => {
-  if (event.button !== 0 || isControlTarget(event.target)) {
+  if (event.button !== 0 || isControlTarget(event.target) || !isSpriteTarget(event.target)) {
     return;
   }
 
   setControlsVisible(true);
 });
 els.stage.addEventListener("dblclick", (event) => {
-  if (isControlTarget(event.target)) {
+  if (isControlTarget(event.target) || !isSpriteTarget(event.target)) {
     return;
   }
 
@@ -360,32 +362,6 @@ els.stage.addEventListener("pointerleave", () => {
 els.stage.addEventListener("wheel", (event) => {
   event.preventDefault();
   resizeToScale(sizeScale + (event.deltaY < 0 ? SIZE_STEP : -SIZE_STEP));
-});
-els.resizeHandle.addEventListener("pointerdown", (event) => {
-  event.preventDefault();
-  resizeDrag = {
-    pointerId: event.pointerId,
-    startX: event.screenX,
-    startY: event.screenY,
-    startScale: sizeScale
-  };
-  els.resizeHandle.setPointerCapture(event.pointerId);
-});
-els.resizeHandle.addEventListener("pointermove", (event) => {
-  if (!resizeDrag || event.pointerId !== resizeDrag.pointerId) {
-    return;
-  }
-
-  const delta = Math.max(event.screenX - resizeDrag.startX, event.screenY - resizeDrag.startY);
-  resizeToScale(resizeDrag.startScale + delta / DEFAULT_WINDOW_SIZE, "top-left");
-});
-els.resizeHandle.addEventListener("pointerup", (event) => {
-  if (resizeDrag && event.pointerId === resizeDrag.pointerId) {
-    resizeDrag = null;
-  }
-});
-els.resizeHandle.addEventListener("pointercancel", () => {
-  resizeDrag = null;
 });
 window.addEventListener("resize", () => {
   const petAreaHeight = Math.max(1, window.innerHeight - CONTROL_BAR_HEIGHT);

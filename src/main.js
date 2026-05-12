@@ -407,7 +407,7 @@ function createWindow() {
     transparent: true,
     backgroundColor: "#00000000",
     hasShadow: false,
-    resizable: true,
+    resizable: false,
     alwaysOnTop: true,
     title: "Codex Pets Viewer",
     webPreferences: {
