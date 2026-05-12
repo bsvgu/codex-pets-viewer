@@ -1,6 +1,6 @@
 {
   "name": "codex-pets-viewer",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Standalone viewer for bundled Codex pet animations.",
   "main": "src/main.js",
   "private": true,

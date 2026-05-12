@@ -510,9 +510,6 @@ els.stage.addEventListener("wheel", (event) => {
   resizeToScale(sizeScale + (event.deltaY < 0 ? SIZE_STEP : -SIZE_STEP));
 });
 window.addEventListener("resize", () => {
-  const petAreaHeight = Math.max(1, window.innerHeight - CONTROL_BAR_HEIGHT);
-  sizeScale = clamp(Math.min(window.innerWidth, petAreaHeight) / DEFAULT_WINDOW_SIZE, MIN_SIZE_SCALE, MAX_SIZE_SCALE);
-  saveSizeScale();
   updateSpriteScale();
 });
 
