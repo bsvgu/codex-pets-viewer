@@ -8,6 +8,8 @@ const BASE_SPRITE_SCALE = 1.38;
 const MIN_SIZE_SCALE = 0.32;
 const MAX_SIZE_SCALE = 2.24;
 const SIZE_STEP = 0.1;
+const CONTROL_BAR_WIDTH = 304;
+const CONTROL_BAR_HEIGHT = 44;
 
 const ANIMATIONS = [
   {
@@ -118,12 +120,31 @@ function saveSizeScale() {
   localStorage.setItem("size-scale", sizeScale.toFixed(2));
 }
 
+function currentPetBoxSize() {
+  return Math.round(DEFAULT_WINDOW_SIZE * sizeScale);
+}
+
+function currentWindowLayout() {
+  const petBoxSize = currentPetBoxSize();
+
+  return {
+    width: controlsVisible ? Math.max(petBoxSize, CONTROL_BAR_WIDTH) : petBoxSize,
+    height: controlsVisible ? petBoxSize + CONTROL_BAR_HEIGHT : petBoxSize
+  };
+}
+
+function applyWindowLayout(anchor = "center") {
+  const layout = currentWindowLayout();
+  window.petViewer.setSize(layout.width, layout.height, anchor);
+}
+
 function updateSpriteScale() {
-  const minDimension = Math.max(1, Math.min(window.innerWidth, window.innerHeight));
-  const padding = clamp(minDimension * 0.1, 6, 18);
-  const desiredScale = BASE_SPRITE_SCALE * (minDimension / DEFAULT_WINDOW_SIZE);
+  const petBoxSize = currentPetBoxSize();
+  const petAreaHeight = controlsVisible ? Math.max(1, window.innerHeight - CONTROL_BAR_HEIGHT) : window.innerHeight;
+  const padding = clamp(petBoxSize * 0.1, 6, 18);
+  const desiredScale = BASE_SPRITE_SCALE * (petBoxSize / DEFAULT_WINDOW_SIZE);
   const maxWidthScale = Math.max(0.1, (window.innerWidth - padding * 2) / ATLAS.cellWidth);
-  const maxHeightScale = Math.max(0.1, (window.innerHeight - padding * 2) / ATLAS.cellHeight);
+  const maxHeightScale = Math.max(0.1, (petAreaHeight - padding * 2) / ATLAS.cellHeight);
 
   spriteScale = Math.min(desiredScale, maxWidthScale, maxHeightScale);
   els.sprite.style.setProperty("--sprite-width", `${(ATLAS.cellWidth * spriteScale).toFixed(2)}px`);
@@ -136,7 +157,7 @@ function updateSpriteScale() {
 function resizeToScale(nextScale, anchor = "center") {
   sizeScale = clamp(nextScale, MIN_SIZE_SCALE, MAX_SIZE_SCALE);
   saveSizeScale();
-  window.petViewer.setSize(Math.round(DEFAULT_WINDOW_SIZE * sizeScale), anchor);
+  applyWindowLayout(anchor);
   updateSpriteScale();
 }
 
@@ -235,8 +256,14 @@ function showMenu() {
 }
 
 function setControlsVisible(visible) {
+  if (controlsVisible === visible) {
+    return;
+  }
+
   controlsVisible = visible;
   els.stage.classList.toggle("controls-visible", controlsVisible);
+  applyWindowLayout(controlsVisible ? "show-controls" : "hide-controls");
+  updateSpriteScale();
 }
 
 function isControlTarget(target) {
@@ -363,7 +390,8 @@ els.resizeHandle.addEventListener("pointercancel", () => {
   resizeDrag = null;
 });
 window.addEventListener("resize", () => {
-  sizeScale = clamp(Math.min(window.innerWidth, window.innerHeight) / DEFAULT_WINDOW_SIZE, MIN_SIZE_SCALE, MAX_SIZE_SCALE);
+  const petAreaHeight = controlsVisible ? Math.max(1, window.innerHeight - CONTROL_BAR_HEIGHT) : window.innerHeight;
+  sizeScale = clamp(Math.min(window.innerWidth, petAreaHeight) / DEFAULT_WINDOW_SIZE, MIN_SIZE_SCALE, MAX_SIZE_SCALE);
   saveSizeScale();
   updateSpriteScale();
 });

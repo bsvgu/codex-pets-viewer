@@ -3,6 +3,7 @@
   --button-hover: rgba(52, 58, 74, 0.9);
   --button-border: rgba(255, 255, 255, 0.18);
   --text: rgba(255, 255, 255, 0.94);
+  --controls-space: 0px;
 }
 
 * {
@@ -29,6 +30,7 @@ body {
 #stage {
   position: relative;
   display: grid;
+  grid-template-rows: var(--controls-space) minmax(0, 1fr);
   width: 100vw;
   height: 100vh;
   place-items: center;
@@ -36,7 +38,12 @@ body {
   -webkit-app-region: no-drag;
 }
 
+#stage.controls-visible {
+  --controls-space: 44px;
+}
+
 #sprite {
+  grid-row: 2;
   width: var(--sprite-width, 192px);
   height: var(--sprite-height, 208px);
   background-repeat: no-repeat;
@@ -49,8 +56,9 @@ body {
   top: 4px;
   left: 50%;
   display: flex;
-  max-width: calc(100vw - 8px);
-  flex-wrap: wrap;
+  width: max-content;
+  max-width: none;
+  flex-wrap: nowrap;
   justify-content: center;
   gap: 4px;
   padding: 4px;

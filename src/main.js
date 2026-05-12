@@ -474,20 +474,44 @@ function openSettingsWindow() {
   settingsWindow.focus();
 }
 
-function setWindowSize(size, anchor = "center") {
+function setWindowSize(width, height = width, anchor = "center") {
   if (!mainWindow) {
     return;
   }
 
-  const nextSize = Math.round(Math.min(MAX_WINDOW_SIZE, Math.max(MIN_WINDOW_SIZE, size)));
+  const nextWidth = Math.round(Math.min(MAX_WINDOW_SIZE, Math.max(MIN_WINDOW_SIZE, width)));
+  const nextHeight = Math.round(Math.min(MAX_WINDOW_SIZE + 80, Math.max(MIN_WINDOW_SIZE, height)));
   const bounds = mainWindow.getBounds();
-  const keepTopLeft = anchor === "top-left";
+  let nextX = bounds.x + Math.round((bounds.width - nextWidth) / 2);
+  let nextY = bounds.y + Math.round((bounds.height - nextHeight) / 2);
+
+  if (anchor === "top-left") {
+    nextX = bounds.x;
+    nextY = bounds.y;
+  }
+
+  if (anchor === "show-controls") {
+    nextY = bounds.y - Math.max(0, nextHeight - bounds.height);
+  }
+
+  if (anchor === "hide-controls") {
+    nextY = bounds.y + Math.max(0, bounds.height - nextHeight);
+  }
+
+  const area = screen.getDisplayMatching({
+    x: nextX,
+    y: nextY,
+    width: nextWidth,
+    height: nextHeight
+  }).workArea;
+  nextX = Math.min(area.x + area.width - nextWidth, Math.max(area.x, nextX));
+  nextY = Math.min(area.y + area.height - nextHeight, Math.max(area.y, nextY));
 
   mainWindow.setBounds({
-    x: keepTopLeft ? bounds.x : bounds.x + Math.round((bounds.width - nextSize) / 2),
-    y: keepTopLeft ? bounds.y : bounds.y + Math.round((bounds.height - nextSize) / 2),
-    width: nextSize,
-    height: nextSize
+    x: nextX,
+    y: nextY,
+    width: nextWidth,
+    height: nextHeight
   });
 }
 
@@ -579,7 +603,7 @@ if (!gotLock) {
     ipcMain.on("window:close", () => app.quit());
     ipcMain.on("window:minimize", () => mainWindow?.minimize());
     ipcMain.on("window:move-to", (_event, x, y) => moveWindowTo(x, y));
-    ipcMain.on("window:set-size", (_event, size, anchor) => setWindowSize(size, anchor));
+    ipcMain.on("window:set-size", (_event, width, height, anchor) => setWindowSize(width, height, anchor));
     ipcMain.on("pet:show-menu", (_event, currentPetId) => showPetMenu(currentPetId));
     ipcMain.on("settings:open", () => openSettingsWindow());
 
