@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "appVersion": "1.1.0",
+  "minimumAppVersion": "1.0.0",
+  "channel": "stable",
+  "pets": [
+    {
+      "id": "little-black-mage",
+      "version": "1.0.0"
+    },
+    {
+      "id": "merry",
+      "version": "1.0.0"
+    },
+    {
+      "id": "mimi",
+      "version": "1.0.0"
+    },
+    {
+      "id": "veiglet",
+      "version": "1.0.0"
+    }
+  ]
+}

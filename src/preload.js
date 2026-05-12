@@ -1,7 +1,9 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("petViewer", {
+  getAppInfo: () => ipcRenderer.invoke("app:info"),
   getPets: () => ipcRenderer.invoke("pets:list"),
+  checkForUpdates: () => ipcRenderer.invoke("updates:check"),
   getBounds: () => ipcRenderer.invoke("window:get-bounds"),
   moveTo: (x, y) => ipcRenderer.send("window:move-to", x, y),
   close: () => ipcRenderer.send("window:close"),
