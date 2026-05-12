@@ -105,6 +105,7 @@ function readPetsFromRoot(petsRoot, source) {
         displayName: manifest.displayName || manifest.id || entry.name,
         description: manifest.description || "",
         version: manifest.version || "1.0.0",
+        animations: Array.isArray(manifest.animations) ? manifest.animations : [],
         source,
         spriteUrl: pathToFileURL(spritesheetPath).toString()
       };

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' file:; style-src 'self' 'unsafe-inline'; script-src 'self';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codex Pets Animation Editor</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <aside>
+      <header>
+        <h1>Animation Editor</h1>
+        <button id="openFolder" type="button">Ordner</button>
+      </header>
+      <div id="petList"></div>
+    </aside>
+
+    <main>
+      <section class="topbar">
+        <div>
+          <h2 id="petName">Kein Pet</h2>
+          <p id="petMeta"></p>
+        </div>
+        <div class="actions">
+          <label>
+            Version
+            <input id="version" type="text" spellcheck="false">
+          </label>
+          <button id="save" type="button" class="primary">Speichern</button>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <section class="panel spritePanel">
+          <div class="panelHead">
+            <h3>Spritesheet</h3>
+            <p>Frame anklicken, um ihn zur Sequenz hinzuzufuegen.</p>
+          </div>
+          <div id="sheet" class="sheet"></div>
+        </section>
+
+        <section class="panel sequencePanel">
+          <div class="panelHead">
+            <h3>Sequenz</h3>
+            <select id="animationSelect"></select>
+          </div>
+
+          <div class="previewPane">
+            <div id="previewSprite" class="previewSprite"></div>
+            <div>
+              <strong>Preview</strong>
+              <p id="previewMeta">Keine Frames</p>
+            </div>
+            <button id="playPreview" type="button">Play</button>
+          </div>
+
+          <div class="settings">
+            <label>
+              Loops
+              <input id="loops" type="number" min="1" max="99" step="1">
+            </label>
+            <label>
+              Dauer fuer neue Frames
+              <input id="duration" type="number" min="40" max="3000" step="10">
+            </label>
+            <button id="applyDuration" type="button">Dauer auf alle</button>
+            <button id="reset" type="button">Default</button>
+            <button id="clear" type="button">Leeren</button>
+          </div>
+
+          <div id="sequence" class="sequence"></div>
+          <p id="status"></p>
+        </section>
+      </section>
+    </main>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

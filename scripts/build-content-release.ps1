@@ -1,7 +1,7 @@
 param(
   [string]$PetsDir = "assets\pets",
   [string]$OutputDir = "dist-content",
-  [string]$MinimumAppVersion = "1.3.0"
+  [string]$MinimumAppVersion = "1.3.2"
 )
 
 $ErrorActionPreference = "Stop"

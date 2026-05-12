@@ -1,0 +1,269 @@
+:root {
+  color-scheme: light;
+  --bg: #f5f7fb;
+  --panel: #ffffff;
+  --text: #151821;
+  --muted: #667085;
+  --border: #d9dee8;
+  --accent: #245dff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+aside {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border-right: 1px solid var(--border);
+  background: #fff;
+  overflow: hidden;
+}
+
+header,
+.topbar,
+.panelHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+aside header {
+  padding: 18px;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 18px;
+}
+
+h2 {
+  font-size: 22px;
+}
+
+h3 {
+  font-size: 15px;
+}
+
+p,
+label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+#petList {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 0 12px 12px;
+  overflow: auto;
+}
+
+.petButton {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  height: auto;
+  min-height: 48px;
+  justify-items: start;
+  text-align: left;
+}
+
+.petButton.selected {
+  border-color: var(--accent);
+  background: #eef3ff;
+}
+
+main {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 16px;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.topbar,
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 14px;
+}
+
+.actions,
+.settings {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+
+label {
+  display: grid;
+  gap: 4px;
+  font-weight: 600;
+}
+
+input,
+select,
+button {
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0 10px;
+  background: #fff;
+  color: var(--text);
+  font: 600 13px "Segoe UI", Arial, sans-serif;
+}
+
+button {
+  cursor: default;
+}
+
+button:hover {
+  background: #eef1f6;
+}
+
+button:disabled {
+  opacity: 0.42;
+}
+
+.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) minmax(420px, 1fr);
+  gap: 16px;
+  min-height: 0;
+}
+
+.panel {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.spritePanel {
+  grid-template-rows: auto 1fr;
+}
+
+.sequencePanel {
+  grid-template-rows: auto auto auto 1fr auto;
+}
+
+.sheet {
+  display: grid;
+  grid-template-columns: repeat(8, 72px);
+  grid-auto-rows: 78px;
+  justify-content: start;
+  gap: 6px;
+  overflow: auto;
+  padding: 4px;
+}
+
+.cell,
+.seqItemPreview,
+.previewSprite {
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+.cell {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background-color: #eef1f6;
+}
+
+.cell:hover {
+  border-color: var(--accent);
+}
+
+.cell span {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  border-radius: 4px;
+  padding: 2px 4px;
+  background: rgba(0, 0, 0, 0.58);
+  color: #fff;
+  font-size: 10px;
+}
+
+.sequence {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  overflow: auto;
+}
+
+.previewPane {
+  display: grid;
+  grid-template-columns: 96px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.previewSprite {
+  width: 86px;
+  height: 94px;
+  border-radius: 7px;
+  background-color: #eef1f6;
+}
+
+.seqItem {
+  display: grid;
+  grid-template-columns: 54px 1fr auto auto auto auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff;
+}
+
+.seqItemPreview {
+  width: 48px;
+  height: 52px;
+  border-radius: 6px;
+  background-color: #eef1f6;
+}
+
+.seqItem input {
+  width: 90px;
+}
+
+.miniButton {
+  width: 34px;
+  padding: 0;
+}
+
+#status {
+  min-height: 18px;
+}

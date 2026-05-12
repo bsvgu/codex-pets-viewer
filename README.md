@@ -4,9 +4,11 @@ Portable Windows viewer for bundled Codex-style pet animations.
 
 ## Included pets
 
+- Chopper
 - Little Black Mage
 - Merry
 - Mimi
+- Sanji
 - Veiglet
 
 ## Usage
@@ -34,6 +36,21 @@ npm run build:win
 ```
 
 The portable EXE is written to `dist/Codex Pets Viewer.exe`.
+
+## Internal animation editor
+
+The editor is a developer-only tool and is not bundled into the public EXE.
+
+```powershell
+npm run editor
+```
+
+Use it to pick a pet, inspect every spritesheet cell, build per-animation frame sequences, set frame durations and loop counts, then save. Saving updates the pet's `pet.json` and bumps the pet version. Build and upload content after editing:
+
+```powershell
+npm run content:build
+npm run content:upload
+```
 
 ## Updates
 

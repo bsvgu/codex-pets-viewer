@@ -16,7 +16,7 @@ const IDLE_ANIMATION_ID = "idle";
 const IDLE_LOOPS_MIN = 6;
 const IDLE_LOOPS_MAX = 10;
 
-const ANIMATIONS = [
+const DEFAULT_ANIMATIONS = [
   {
     id: "idle",
     row: 0,
@@ -100,6 +100,7 @@ const els = {
 
 let pets = [];
 let petIndex = 0;
+let activeAnimations = DEFAULT_ANIMATIONS;
 let animationIndex = 0;
 let frameIndex = 0;
 let completedLoops = 0;
@@ -172,11 +173,12 @@ function currentPet() {
 }
 
 function currentAnimation() {
-  return ANIMATIONS[animationIndex];
+  return activeAnimations[animationIndex] || activeAnimations[0];
 }
 
 function idleAnimationIndex() {
-  return ANIMATIONS.findIndex((animation) => animation.id === IDLE_ANIMATION_ID);
+  const index = activeAnimations.findIndex((animation) => animation.id === IDLE_ANIMATION_ID);
+  return index >= 0 ? index : 0;
 }
 
 function randomIdleLoops() {
@@ -185,11 +187,74 @@ function randomIdleLoops() {
 
 function randomNonIdleAnimationIndex() {
   const idleIndex = idleAnimationIndex();
-  const candidates = ANIMATIONS
+  const candidates = activeAnimations
     .map((_animation, index) => index)
     .filter((index) => index !== idleIndex);
 
   return candidates[Math.floor(Math.random() * candidates.length)] || idleIndex;
+}
+
+function clampCell(value, max) {
+  return Math.min(max, Math.max(0, Number.parseInt(value, 10) || 0));
+}
+
+function defaultAnimationCells(animation) {
+  const frameCount = Array.isArray(animation.frames) ? animation.frames.length : Number.parseInt(animation.frames, 10) || 0;
+  const frames = Array.isArray(animation.frames)
+    ? animation.frames
+    : Array.from({ length: frameCount }, (_value, index) => index);
+  const durations = Array.isArray(animation.durations) ? animation.durations : [];
+
+  return frames.map((frame, index) => ({
+    row: clampCell(animation.row, 8),
+    col: clampCell(frame, 7),
+    duration: Math.max(40, Number.parseInt(durations[index] || durations[durations.length - 1] || 140, 10) || 140)
+  }));
+}
+
+function animationCells(animation) {
+  if (Array.isArray(animation.sequence) && animation.sequence.length) {
+    return animation.sequence.map((cell) => ({
+      row: clampCell(cell.row, 8),
+      col: clampCell(cell.col ?? cell.frame, 7),
+      duration: Math.max(40, Number.parseInt(cell.duration, 10) || 140)
+    }));
+  }
+
+  return defaultAnimationCells(animation);
+}
+
+function normalizeAnimation(animation, fallback = {}) {
+  const merged = {
+    ...fallback,
+    ...animation,
+    id: animation.id || fallback.id,
+    loops: Math.max(1, Number.parseInt(animation.loops ?? fallback.loops ?? 1, 10) || 1)
+  };
+
+  if (Array.isArray(animation.sequence)) {
+    merged.sequence = animation.sequence.map((cell) => ({
+      row: clampCell(cell.row, 8),
+      col: clampCell(cell.col ?? cell.frame, 7),
+      duration: Math.max(40, Number.parseInt(cell.duration, 10) || 140)
+    }));
+  }
+
+  return merged;
+}
+
+function animationsForPet(pet) {
+  const overrides = new Map((pet.animations || []).map((animation) => [animation.id, animation]));
+  const animations = DEFAULT_ANIMATIONS.map((fallback) => normalizeAnimation(overrides.get(fallback.id) || {}, fallback));
+  const knownIds = new Set(animations.map((animation) => animation.id));
+
+  for (const animation of pet.animations || []) {
+    if (animation.id && !knownIds.has(animation.id)) {
+      animations.push(normalizeAnimation(animation));
+    }
+  }
+
+  return animations;
 }
 
 function savePetChoice() {
@@ -202,8 +267,10 @@ function savePetChoice() {
 
 function updateFrame() {
   const animation = currentAnimation();
-  const x = -frameIndex * ATLAS.cellWidth * spriteScale;
-  const y = -animation.row * ATLAS.cellHeight * spriteScale;
+  const cells = animationCells(animation);
+  const cell = cells[frameIndex] || cells[0] || { row: 0, col: 0 };
+  const x = -cell.col * ATLAS.cellWidth * spriteScale;
+  const y = -cell.row * ATLAS.cellHeight * spriteScale;
 
   els.sprite.style.backgroundPosition = `${x.toFixed(2)}px ${y.toFixed(2)}px`;
 }
@@ -217,12 +284,13 @@ function clearAnimationTimer() {
 
 function scheduleFrame() {
   const animation = currentAnimation();
-  const duration = animation.durations[frameIndex] || animation.durations[animation.durations.length - 1];
+  const cells = animationCells(animation);
+  const duration = cells[frameIndex]?.duration || cells[cells.length - 1]?.duration || 140;
 
   timer = window.setTimeout(() => {
     frameIndex += 1;
 
-    if (frameIndex >= animation.frames) {
+    if (frameIndex >= cells.length) {
       frameIndex = 0;
       completedLoops += 1;
 
@@ -239,7 +307,7 @@ function scheduleFrame() {
 
 function playAnimation(index = animationIndex, loops = null) {
   clearAnimationTimer();
-  animationIndex = (index + ANIMATIONS.length) % ANIMATIONS.length;
+  animationIndex = (index + activeAnimations.length) % activeAnimations.length;
   targetLoops = loops || currentAnimation().loops || 1;
   frameIndex = 0;
   completedLoops = 0;
@@ -253,7 +321,7 @@ function playIdleAnimation() {
 
 function playRandomNonIdleAnimation() {
   const nextIndex = randomNonIdleAnimationIndex();
-  playAnimation(nextIndex, ANIMATIONS[nextIndex].loops || 1);
+  playAnimation(nextIndex, activeAnimations[nextIndex].loops || 1);
 }
 
 function playNextScheduledAnimation() {
@@ -276,6 +344,7 @@ function setPetByIndex(index) {
   petIndex = (index + pets.length) % pets.length;
   const pet = currentPet();
 
+  activeAnimations = animationsForPet(pet);
   els.sprite.style.backgroundImage = `url("${pet.spriteUrl}")`;
   els.label.textContent = pet.displayName;
   els.stage.setAttribute("aria-label", pet.displayName);
