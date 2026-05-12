@@ -513,6 +513,8 @@ function setWindowSize(width, height = width, anchor = "center") {
     width: nextWidth,
     height: nextHeight
   });
+
+  return mainWindow.getBounds();
 }
 
 function moveWindowTo(x, y) {
@@ -603,7 +605,7 @@ if (!gotLock) {
     ipcMain.on("window:close", () => app.quit());
     ipcMain.on("window:minimize", () => mainWindow?.minimize());
     ipcMain.on("window:move-to", (_event, x, y) => moveWindowTo(x, y));
-    ipcMain.on("window:set-size", (_event, width, height, anchor) => setWindowSize(width, height, anchor));
+    ipcMain.handle("window:set-size", (_event, width, height, anchor) => setWindowSize(width, height, anchor));
     ipcMain.on("pet:show-menu", (_event, currentPetId) => showPetMenu(currentPetId));
     ipcMain.on("settings:open", () => openSettingsWindow());
 

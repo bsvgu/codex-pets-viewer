@@ -135,7 +135,11 @@ function currentWindowLayout() {
 
 function applyWindowLayout(anchor = "center") {
   const layout = currentWindowLayout();
-  window.petViewer.setSize(layout.width, layout.height, anchor);
+  return window.petViewer.setSize(layout.width, layout.height, anchor);
+}
+
+function nextFrame() {
+  return new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
 function updateSpriteScale() {
@@ -255,15 +259,24 @@ function showMenu() {
   window.petViewer.showMenu(currentPet()?.id || "");
 }
 
-function setControlsVisible(visible) {
+async function setControlsVisible(visible) {
   if (controlsVisible === visible) {
     return;
   }
 
   controlsVisible = visible;
-  els.stage.classList.toggle("controls-visible", controlsVisible);
-  applyWindowLayout(controlsVisible ? "show-controls" : "hide-controls");
+  els.stage.classList.remove("controls-visible");
+  await applyWindowLayout(controlsVisible ? "show-controls" : "hide-controls");
+  await nextFrame();
   updateSpriteScale();
+
+  if (controlsVisible) {
+    await nextFrame();
+  }
+
+  if (controlsVisible) {
+    els.stage.classList.add("controls-visible");
+  }
 }
 
 function isControlTarget(target) {

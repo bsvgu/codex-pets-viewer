@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld("petViewer", {
   moveTo: (x, y) => ipcRenderer.send("window:move-to", x, y),
   close: () => ipcRenderer.send("window:close"),
   minimize: () => ipcRenderer.send("window:minimize"),
-  setSize: (width, height, anchor) => ipcRenderer.send("window:set-size", width, height, anchor),
+  setSize: (width, height, anchor) => ipcRenderer.invoke("window:set-size", width, height, anchor),
   showMenu: (currentPetId) => ipcRenderer.send("pet:show-menu", currentPetId),
   onSelectPet: (callback) => {
     const listener = (_event, petId) => callback(petId);
