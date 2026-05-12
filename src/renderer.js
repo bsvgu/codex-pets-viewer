@@ -10,6 +10,8 @@ const MAX_SIZE_SCALE = 2.24;
 const SIZE_STEP = 0.1;
 const CONTROL_BAR_WIDTH = 304;
 const CONTROL_BAR_HEIGHT = 44;
+const CLICK_MOVE_THRESHOLD = 6;
+const DOUBLE_CLICK_MS = 320;
 
 const ANIMATIONS = [
   {
@@ -101,9 +103,10 @@ let completedLoops = 0;
 let timer = null;
 let sizeScale = readSizeScale();
 let moveDrag = null;
+let spritePress = null;
 let spriteScale = BASE_SPRITE_SCALE;
 let controlsVisible = false;
-let didMoveDrag = false;
+let lastSpriteClickAt = 0;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -272,9 +275,21 @@ async function startMoveDrag(event) {
     return;
   }
 
+  const press = {
+    pointerId: event.pointerId,
+    startX: event.screenX,
+    startY: event.screenY,
+    moved: false
+  };
+
+  spritePress = press;
+  try {
+    els.sprite.setPointerCapture(event.pointerId);
+  } catch {}
+
   const bounds = await window.petViewer.getBounds();
 
-  if (!bounds) {
+  if (!bounds || spritePress !== press) {
     return;
   }
 
@@ -285,8 +300,33 @@ async function startMoveDrag(event) {
     windowX: bounds.x,
     windowY: bounds.y
   };
-  didMoveDrag = false;
-  els.stage.setPointerCapture(event.pointerId);
+}
+
+function handleSpritePointerUp(event) {
+  if (!spritePress || event.pointerId !== spritePress.pointerId) {
+    return;
+  }
+
+  const moved = spritePress.moved ||
+    Math.abs(event.screenX - spritePress.startX) > CLICK_MOVE_THRESHOLD ||
+    Math.abs(event.screenY - spritePress.startY) > CLICK_MOVE_THRESHOLD;
+
+  spritePress = null;
+  moveDrag = null;
+
+  if (moved) {
+    return;
+  }
+
+  const now = Date.now();
+  const isDoubleClick = now - lastSpriteClickAt <= DOUBLE_CLICK_MS;
+  lastSpriteClickAt = now;
+  setControlsVisible(true);
+
+  if (isDoubleClick) {
+    lastSpriteClickAt = 0;
+    window.petViewer.runAction();
+  }
 }
 
 async function boot() {
@@ -317,29 +357,24 @@ els.stage.addEventListener("contextmenu", (event) => {
   event.preventDefault();
   showMenu();
 });
-els.sprite.addEventListener("click", (event) => {
-  if (event.button !== 0 || didMoveDrag) {
-    return;
-  }
-
-  setControlsVisible(true);
-});
-els.sprite.addEventListener("dblclick", (event) => {
-  event.preventDefault();
-  moveDrag = null;
-  didMoveDrag = false;
-  window.petViewer.runAction();
-});
 els.sprite.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
   startMoveDrag(event);
 });
 els.stage.addEventListener("pointermove", (event) => {
-  if (!moveDrag || event.pointerId !== moveDrag.pointerId || event.buttons !== 1) {
+  if (!spritePress || event.pointerId !== spritePress.pointerId || event.buttons !== 1) {
     return;
   }
 
-  if (Math.abs(event.screenX - moveDrag.startX) > 2 || Math.abs(event.screenY - moveDrag.startY) > 2) {
-    didMoveDrag = true;
+  if (
+    Math.abs(event.screenX - spritePress.startX) > CLICK_MOVE_THRESHOLD ||
+    Math.abs(event.screenY - spritePress.startY) > CLICK_MOVE_THRESHOLD
+  ) {
+    spritePress.moved = true;
+  }
+
+  if (!moveDrag) {
+    return;
   }
 
   window.petViewer.moveTo(
@@ -348,11 +383,10 @@ els.stage.addEventListener("pointermove", (event) => {
   );
 });
 els.stage.addEventListener("pointerup", (event) => {
-  if (moveDrag && event.pointerId === moveDrag.pointerId) {
-    moveDrag = null;
-  }
+  handleSpritePointerUp(event);
 });
 els.stage.addEventListener("pointercancel", () => {
+  spritePress = null;
   moveDrag = null;
 });
 els.stage.addEventListener("pointerleave", () => {

@@ -45,6 +45,7 @@ body {
   background-repeat: no-repeat;
   background-size: var(--sprite-sheet-width, 1536px) var(--sprite-sheet-height, 1872px);
   image-rendering: pixelated;
+  pointer-events: auto;
   cursor: default;
 }
 
