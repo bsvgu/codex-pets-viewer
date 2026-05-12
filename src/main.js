@@ -1,6 +1,7 @@
 const fs = require("fs");
 const https = require("https");
 const path = require("path");
+const { execFile } = require("child_process");
 const { pathToFileURL } = require("url");
 const { app, BrowserWindow, dialog, ipcMain, Menu, shell } = require("electron");
 const packageJson = require("../package.json");
@@ -11,8 +12,10 @@ const MAX_WINDOW_SIZE = 760;
 const REPO_FULL_NAME = "bsvgu/codex-pets-viewer";
 const RELEASES_LATEST_URL = `https://api.github.com/repos/${REPO_FULL_NAME}/releases/latest`;
 const UPDATE_STATE_FILE = "update-state.json";
+const ACTION_CONFIG_FILE = "action-config.json";
 
 let mainWindow;
+let settingsWindow;
 
 function appPath(...parts) {
   return path.join(app.getAppPath(), ...parts);
@@ -33,6 +36,32 @@ function readJsonFile(filePath, fallback = null) {
 function writeJsonFile(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2), "utf8");
+}
+
+function defaultActionConfig() {
+  return {
+    actionType: "none",
+    appPath: "",
+    browserUrl: "https://www.google.com",
+    focusBrowserFirst: true
+  };
+}
+
+function getActionConfig() {
+  return {
+    ...defaultActionConfig(),
+    ...readJsonFile(userDataPath(ACTION_CONFIG_FILE), {})
+  };
+}
+
+function saveActionConfig(config) {
+  const nextConfig = {
+    ...defaultActionConfig(),
+    ...config
+  };
+
+  writeJsonFile(userDataPath(ACTION_CONFIG_FILE), nextConfig);
+  return nextConfig;
 }
 
 function readPetsFromRoot(petsRoot, source) {
@@ -249,6 +278,123 @@ async function checkForUpdatesAndNotify(manual = false) {
   }
 }
 
+function runPowerShell(script) {
+  return new Promise((resolve) => {
+    execFile(
+      "powershell.exe",
+      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+      { windowsHide: true, timeout: 8000 },
+      (error, stdout) => {
+        resolve({ ok: !error, output: String(stdout || "").trim() });
+      }
+    );
+  });
+}
+
+async function focusProcessNames(processNames) {
+  const names = processNames
+    .map((name) => String(name || "").replace(/[^a-zA-Z0-9_.-]/g, ""))
+    .filter(Boolean);
+
+  if (!names.length) {
+    return false;
+  }
+
+  const namesLiteral = names.map((name) => `'${name}'`).join(",");
+  const script = `
+    Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32 {
+  [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+}
+"@
+    $names = @(${namesLiteral})
+    foreach ($name in $names) {
+      $process = Get-Process -Name $name -ErrorAction SilentlyContinue |
+        Where-Object { $_.MainWindowHandle -ne 0 } |
+        Select-Object -First 1
+      if ($process) {
+        [Win32]::ShowWindowAsync($process.MainWindowHandle, 9) | Out-Null
+        [Win32]::SetForegroundWindow($process.MainWindowHandle) | Out-Null
+        Write-Output "focused"
+        exit 0
+      }
+    }
+    exit 1
+  `;
+  const result = await runPowerShell(script);
+
+  return result.ok && result.output.includes("focused");
+}
+
+async function runBrowserAction(config) {
+  if (config.focusBrowserFirst) {
+    const focused = await focusProcessNames(["chrome", "msedge", "firefox", "brave", "opera", "vivaldi"]);
+    if (focused) {
+      return { ok: true, action: "focused-browser" };
+    }
+  }
+
+  await shell.openExternal(config.browserUrl || "https://www.google.com");
+  return { ok: true, action: "opened-browser" };
+}
+
+async function runAppAction(config) {
+  if (!config.appPath) {
+    openSettingsWindow();
+    return { ok: false, error: "Keine App ausgewaehlt." };
+  }
+
+  if (/\.exe$/i.test(config.appPath)) {
+    const processName = path.basename(config.appPath, path.extname(config.appPath));
+    const focused = await focusProcessNames([processName]);
+
+    if (focused) {
+      return { ok: true, action: "focused-app" };
+    }
+  }
+
+  const error = await shell.openPath(config.appPath);
+  if (error) {
+    return { ok: false, error };
+  }
+
+  return { ok: true, action: "opened-app" };
+}
+
+async function runConfiguredAction() {
+  const config = getActionConfig();
+
+  if (config.actionType === "browser") {
+    return runBrowserAction(config);
+  }
+
+  if (config.actionType === "app") {
+    return runAppAction(config);
+  }
+
+  return { ok: true, action: "none" };
+}
+
+async function chooseApplication() {
+  const result = await dialog.showOpenDialog(settingsWindow || mainWindow, {
+    title: "App auswaehlen",
+    properties: ["openFile"],
+    filters: [
+      { name: "Apps", extensions: ["exe", "lnk", "bat", "cmd"] },
+      { name: "Alle Dateien", extensions: ["*"] }
+    ]
+  });
+
+  if (result.canceled || !result.filePaths.length) {
+    return null;
+  }
+
+  return result.filePaths[0];
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: DEFAULT_WINDOW_SIZE,
@@ -272,6 +418,36 @@ function createWindow() {
   });
 
   mainWindow.loadFile(appPath("src", "index.html"));
+}
+
+function openSettingsWindow() {
+  if (settingsWindow) {
+    settingsWindow.focus();
+    return;
+  }
+
+  settingsWindow = new BrowserWindow({
+    width: 460,
+    height: 550,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    title: "Pet Aktion",
+    parent: mainWindow || undefined,
+    modal: false,
+    show: false,
+    webPreferences: {
+      preload: appPath("src", "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  settingsWindow.once("ready-to-show", () => settingsWindow?.show());
+  settingsWindow.on("closed", () => {
+    settingsWindow = null;
+  });
+  settingsWindow.loadFile(appPath("src", "settings.html"));
 }
 
 function setWindowSize(size, anchor = "center") {
@@ -328,6 +504,14 @@ function showPetMenu(currentPetId) {
       label: "Update pruefen",
       click: () => checkForUpdatesAndNotify(true)
     },
+    {
+      label: "Aktion einstellen",
+      click: () => openSettingsWindow()
+    },
+    {
+      label: "Aktion testen",
+      click: () => runConfiguredAction()
+    },
     { type: "separator" },
     {
       label: "Schliessen",
@@ -361,6 +545,10 @@ if (!gotLock) {
       repo: REPO_FULL_NAME,
       updateManifest: readBundledUpdateManifest()
     }));
+    ipcMain.handle("action:get-config", () => getActionConfig());
+    ipcMain.handle("action:save-config", (_event, config) => saveActionConfig(config));
+    ipcMain.handle("action:choose-app", () => chooseApplication());
+    ipcMain.handle("action:run", () => runConfiguredAction());
     ipcMain.handle("pets:list", () => readPets());
     ipcMain.handle("updates:check", () => checkForUpdates());
     ipcMain.handle("window:get-bounds", () => mainWindow?.getBounds() || null);
@@ -369,6 +557,7 @@ if (!gotLock) {
     ipcMain.on("window:move-to", (_event, x, y) => moveWindowTo(x, y));
     ipcMain.on("window:set-size", (_event, size, anchor) => setWindowSize(size, anchor));
     ipcMain.on("pet:show-menu", (_event, currentPetId) => showPetMenu(currentPetId));
+    ipcMain.on("settings:open", () => openSettingsWindow());
 
     createWindow();
     setTimeout(() => checkForUpdatesAndNotify(false), 2500);

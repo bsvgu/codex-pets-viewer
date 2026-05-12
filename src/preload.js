@@ -2,6 +2,11 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("petViewer", {
   getAppInfo: () => ipcRenderer.invoke("app:info"),
+  getActionConfig: () => ipcRenderer.invoke("action:get-config"),
+  saveActionConfig: (config) => ipcRenderer.invoke("action:save-config", config),
+  chooseApplication: () => ipcRenderer.invoke("action:choose-app"),
+  runAction: () => ipcRenderer.invoke("action:run"),
+  openSettings: () => ipcRenderer.send("settings:open"),
   getPets: () => ipcRenderer.invoke("pets:list"),
   checkForUpdates: () => ipcRenderer.invoke("updates:check"),
   getBounds: () => ipcRenderer.invoke("window:get-bounds"),

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Action</title>
+    <link rel="stylesheet" href="./settings.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Doppelklick-Aktion</h1>
+        <p>Was soll passieren, wenn du das Pet doppelt anklickst?</p>
+      </header>
+
+      <section class="choices" aria-label="Action type">
+        <label class="choice">
+          <input type="radio" name="actionType" value="browser">
+          <span>
+            <strong>Browser anzeigen</strong>
+            <small>Fokussiert Chrome, Edge, Firefox usw. oder oeffnet eine URL.</small>
+          </span>
+        </label>
+
+        <label class="choice">
+          <input type="radio" name="actionType" value="app">
+          <span>
+            <strong>App starten</strong>
+            <small>Startet eine ausgewaehlte App oder bringt sie nach vorne.</small>
+          </span>
+        </label>
+
+        <label class="choice">
+          <input type="radio" name="actionType" value="none">
+          <span>
+            <strong>Keine Aktion</strong>
+            <small>Doppelklick macht nichts.</small>
+          </span>
+        </label>
+      </section>
+
+      <section class="panel" id="browserPanel">
+        <label for="browserUrl">URL, falls kein Browser sichtbar ist</label>
+        <input id="browserUrl" type="url" spellcheck="false" placeholder="https://www.google.com">
+        <label class="toggle">
+          <input id="focusBrowserFirst" type="checkbox">
+          <span>gestarteten Browser zuerst anzeigen</span>
+        </label>
+      </section>
+
+      <section class="panel" id="appPanel">
+        <label for="appPath">Ausgewaehlte App</label>
+        <div class="picker">
+          <input id="appPath" type="text" readonly placeholder="Noch keine App ausgewaehlt">
+          <button id="chooseApp" type="button">Auswaehlen</button>
+        </div>
+      </section>
+
+      <footer>
+        <button id="testAction" type="button">Testen</button>
+        <button id="saveAction" type="button" class="primary">Speichern</button>
+      </footer>
+    </main>
+    <script src="./settings.js"></script>
+  </body>
+</html>

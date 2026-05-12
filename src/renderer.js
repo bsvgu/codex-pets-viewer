@@ -85,6 +85,7 @@ const els = {
   zoomOut: document.getElementById("zoomOut"),
   zoomIn: document.getElementById("zoomIn"),
   nextAnimation: document.getElementById("nextAnimation"),
+  settings: document.getElementById("settings"),
   menu: document.getElementById("menu"),
   minimize: document.getElementById("minimize"),
   close: document.getElementById("close"),
@@ -277,12 +278,22 @@ els.nextPet.addEventListener("click", () => setPetByIndex(petIndex + 1));
 els.zoomOut.addEventListener("click", () => resizeToScale(sizeScale - SIZE_STEP));
 els.zoomIn.addEventListener("click", () => resizeToScale(sizeScale + SIZE_STEP));
 els.nextAnimation.addEventListener("click", () => nextAnimation(false));
+els.settings.addEventListener("click", () => window.petViewer.openSettings());
 els.menu.addEventListener("click", showMenu);
 els.minimize.addEventListener("click", () => window.petViewer.minimize());
 els.close.addEventListener("click", () => window.petViewer.close());
 els.stage.addEventListener("contextmenu", (event) => {
   event.preventDefault();
   showMenu();
+});
+els.stage.addEventListener("dblclick", (event) => {
+  if (isControlTarget(event.target)) {
+    return;
+  }
+
+  event.preventDefault();
+  moveDrag = null;
+  window.petViewer.runAction();
 });
 els.stage.addEventListener("pointerdown", (event) => {
   startMoveDrag(event);

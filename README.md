@@ -12,10 +12,19 @@ Portable Windows viewer for bundled Codex-style pet animations.
 ## Usage
 
 - Left-click drag: move the pet
+- Double-click: run the configured pet action
 - Right-click: open the pet menu
 - Mouse wheel or `+` / `-`: resize
 - Hover: show controls
 - `Esc`: quit
+
+## Pet action
+
+Open `Aktion einstellen` from the right-click menu or the `S` button.
+
+- `Browser anzeigen`: restores a running browser if possible, otherwise opens the configured URL.
+- `App starten`: restores the selected app if it is already running, otherwise starts it.
+- `Keine Aktion`: disables double-click actions.
 
 ## Build
 
@@ -32,6 +41,7 @@ The app checks GitHub Releases for the latest stable version.
 
 - Full app updates are distributed as a new portable EXE release asset.
 - The app opens the GitHub download page; users replace the old EXE with the new one.
+- Settings are stored in the user's app data folder and stay available after replacing the EXE.
 - Pet assets are versioned in `assets/update-manifest.json`.
 - Downloaded future pet packs can live in the app data `pets` folder and override bundled pets by id.
 
