@@ -12,6 +12,9 @@ const CONTROL_BAR_WIDTH = 304;
 const CONTROL_BAR_HEIGHT = 44;
 const CLICK_MOVE_THRESHOLD = 6;
 const DOUBLE_CLICK_MS = 320;
+const IDLE_ANIMATION_ID = "idle";
+const IDLE_LOOPS_MIN = 6;
+const IDLE_LOOPS_MAX = 10;
 
 const ANIMATIONS = [
   {
@@ -100,6 +103,7 @@ let petIndex = 0;
 let animationIndex = 0;
 let frameIndex = 0;
 let completedLoops = 0;
+let targetLoops = IDLE_LOOPS_MIN;
 let timer = null;
 let sizeScale = readSizeScale();
 let moveDrag = null;
@@ -171,6 +175,23 @@ function currentAnimation() {
   return ANIMATIONS[animationIndex];
 }
 
+function idleAnimationIndex() {
+  return ANIMATIONS.findIndex((animation) => animation.id === IDLE_ANIMATION_ID);
+}
+
+function randomIdleLoops() {
+  return IDLE_LOOPS_MIN + Math.floor(Math.random() * (IDLE_LOOPS_MAX - IDLE_LOOPS_MIN + 1));
+}
+
+function randomNonIdleAnimationIndex() {
+  const idleIndex = idleAnimationIndex();
+  const candidates = ANIMATIONS
+    .map((_animation, index) => index)
+    .filter((index) => index !== idleIndex);
+
+  return candidates[Math.floor(Math.random() * candidates.length)] || idleIndex;
+}
+
 function savePetChoice() {
   const pet = currentPet();
 
@@ -205,8 +226,8 @@ function scheduleFrame() {
       frameIndex = 0;
       completedLoops += 1;
 
-      if (completedLoops >= animation.loops) {
-        nextAnimation(true);
+      if (completedLoops >= targetLoops) {
+        playNextScheduledAnimation();
         return;
       }
     }
@@ -216,18 +237,35 @@ function scheduleFrame() {
   }, duration);
 }
 
-function playAnimation(index = animationIndex) {
+function playAnimation(index = animationIndex, loops = null) {
   clearAnimationTimer();
   animationIndex = (index + ANIMATIONS.length) % ANIMATIONS.length;
+  targetLoops = loops || currentAnimation().loops || 1;
   frameIndex = 0;
   completedLoops = 0;
   updateFrame();
   scheduleFrame();
 }
 
-function nextAnimation(auto = false) {
-  const nextIndex = auto ? animationIndex + 1 : animationIndex + 1;
-  playAnimation(nextIndex);
+function playIdleAnimation() {
+  playAnimation(idleAnimationIndex(), randomIdleLoops());
+}
+
+function playRandomNonIdleAnimation() {
+  const nextIndex = randomNonIdleAnimationIndex();
+  playAnimation(nextIndex, ANIMATIONS[nextIndex].loops || 1);
+}
+
+function playNextScheduledAnimation() {
+  if (currentAnimation().id === IDLE_ANIMATION_ID) {
+    playRandomNonIdleAnimation();
+  } else {
+    playIdleAnimation();
+  }
+}
+
+function nextAnimation() {
+  playRandomNonIdleAnimation();
 }
 
 function setPetByIndex(index) {
@@ -242,7 +280,7 @@ function setPetByIndex(index) {
   els.label.textContent = pet.displayName;
   els.stage.setAttribute("aria-label", pet.displayName);
   savePetChoice();
-  playAnimation(0);
+  playIdleAnimation();
 }
 
 function setPetById(petId) {
@@ -354,7 +392,7 @@ els.prevPet.addEventListener("click", () => setPetByIndex(petIndex - 1));
 els.nextPet.addEventListener("click", () => setPetByIndex(petIndex + 1));
 els.zoomOut.addEventListener("click", () => resizeToScale(sizeScale - SIZE_STEP));
 els.zoomIn.addEventListener("click", () => resizeToScale(sizeScale + SIZE_STEP));
-els.nextAnimation.addEventListener("click", () => nextAnimation(false));
+els.nextAnimation.addEventListener("click", () => nextAnimation());
 els.settings.addEventListener("click", () => window.petViewer.openSettings());
 els.menu.addEventListener("click", showMenu);
 els.minimize.addEventListener("click", () => window.petViewer.minimize());
@@ -424,7 +462,7 @@ window.addEventListener("keydown", (event) => {
 
   if (event.key === " ") {
     event.preventDefault();
-    nextAnimation(false);
+    nextAnimation();
   }
 
   if (event.key === "+" || event.key === "=") {
@@ -439,7 +477,7 @@ window.addEventListener("keydown", (event) => {
 window.petViewer.onSelectPet(setPetById);
 window.petViewer.onPetsChanged(() => refreshPets());
 window.petViewer.onNextPet(() => setPetByIndex(petIndex + 1));
-window.petViewer.onNextAnimation(() => nextAnimation(false));
+window.petViewer.onNextAnimation(() => nextAnimation());
 
 boot().catch(() => {
   els.empty.hidden = false;
