@@ -103,6 +103,7 @@ let sizeScale = readSizeScale();
 let moveDrag = null;
 let spriteScale = BASE_SPRITE_SCALE;
 let controlsVisible = false;
+let didMoveDrag = false;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -266,12 +267,8 @@ function isControlTarget(target) {
   return Boolean(target.closest("button, #chrome"));
 }
 
-function isSpriteTarget(target) {
-  return target === els.sprite;
-}
-
 async function startMoveDrag(event) {
-  if (event.button !== 0 || isControlTarget(event.target) || !isSpriteTarget(event.target)) {
+  if (event.button !== 0 || isControlTarget(event.target)) {
     return;
   }
 
@@ -288,6 +285,7 @@ async function startMoveDrag(event) {
     windowX: bounds.x,
     windowY: bounds.y
   };
+  didMoveDrag = false;
   els.stage.setPointerCapture(event.pointerId);
 }
 
@@ -319,28 +317,29 @@ els.stage.addEventListener("contextmenu", (event) => {
   event.preventDefault();
   showMenu();
 });
-els.stage.addEventListener("click", (event) => {
-  if (event.button !== 0 || isControlTarget(event.target) || !isSpriteTarget(event.target)) {
+els.sprite.addEventListener("click", (event) => {
+  if (event.button !== 0 || didMoveDrag) {
     return;
   }
 
   setControlsVisible(true);
 });
-els.stage.addEventListener("dblclick", (event) => {
-  if (isControlTarget(event.target) || !isSpriteTarget(event.target)) {
-    return;
-  }
-
+els.sprite.addEventListener("dblclick", (event) => {
   event.preventDefault();
   moveDrag = null;
+  didMoveDrag = false;
   window.petViewer.runAction();
 });
-els.stage.addEventListener("pointerdown", (event) => {
+els.sprite.addEventListener("pointerdown", (event) => {
   startMoveDrag(event);
 });
 els.stage.addEventListener("pointermove", (event) => {
   if (!moveDrag || event.pointerId !== moveDrag.pointerId || event.buttons !== 1) {
     return;
+  }
+
+  if (Math.abs(event.screenX - moveDrag.startX) > 2 || Math.abs(event.screenY - moveDrag.startY) > 2) {
+    didMoveDrag = true;
   }
 
   window.petViewer.moveTo(
