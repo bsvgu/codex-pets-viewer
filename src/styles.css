@@ -46,14 +46,14 @@ body {
 
 #chrome {
   position: absolute;
-  top: 10px;
+  top: 4px;
   left: 50%;
   display: flex;
-  max-width: calc(100vw - 16px);
+  max-width: calc(100vw - 8px);
   flex-wrap: wrap;
   justify-content: center;
-  gap: clamp(3px, 1.6vw, 6px);
-  padding: clamp(3px, 1.6vw, 5px);
+  gap: 4px;
+  padding: 4px;
   border: 1px solid var(--button-border);
   border-radius: 8px;
   background: rgba(9, 10, 14, 0.54);
@@ -73,14 +73,14 @@ body {
 
 button {
   display: grid;
-  width: clamp(18px, 8vw, 28px);
-  height: clamp(18px, 8vw, 28px);
+  width: 28px;
+  height: 28px;
   place-items: center;
   border: 1px solid var(--button-border);
-  border-radius: clamp(5px, 2vw, 7px);
+  border-radius: 7px;
   background: var(--button-bg);
   color: var(--text);
-  font: 700 clamp(9px, 3.4vw, 13px)/1 "Segoe UI", Arial, sans-serif;
+  font: 700 13px/1 "Segoe UI", Arial, sans-serif;
   outline: none;
   cursor: default;
 }
@@ -92,16 +92,16 @@ button:focus-visible {
 
 #label {
   position: absolute;
-  bottom: 10px;
+  bottom: 8px;
   left: 50%;
   max-width: calc(100vw - 24px);
   margin: 0;
-  padding: clamp(3px, 1.5vw, 5px) clamp(6px, 2vw, 10px) clamp(4px, 1.6vw, 6px);
+  padding: 4px 8px 5px;
   border: 1px solid var(--button-border);
   border-radius: 8px;
   background: rgba(9, 10, 14, 0.48);
   color: var(--text);
-  font-size: clamp(9px, 3vw, 12px);
+  font-size: 12px;
   line-height: 1.1;
   text-align: center;
   white-space: nowrap;
@@ -128,13 +128,6 @@ button:focus-visible {
   cursor: nwse-resize;
   pointer-events: auto;
   -webkit-app-region: no-drag;
-}
-
-@media (max-width: 160px), (max-height: 160px) {
-  #chrome,
-  #label {
-    display: none;
-  }
 }
 
 #empty {
