@@ -839,8 +839,14 @@ function setWindowSize(width, height = width, anchor = "center") {
     return;
   }
 
-  const nextWidth = Math.round(Math.min(MAX_WINDOW_SIZE, Math.max(MIN_WINDOW_SIZE, width)));
-  const nextHeight = Math.round(Math.min(MAX_WINDOW_SIZE + 80, Math.max(MIN_WINDOW_SIZE, height)));
+  const parsedWidth = Number(width);
+  const parsedHeight = Number(height);
+  if (!Number.isFinite(parsedWidth) || !Number.isFinite(parsedHeight)) {
+    return mainWindow.getBounds();
+  }
+
+  const nextWidth = Math.round(Math.min(MAX_WINDOW_SIZE, Math.max(MIN_WINDOW_SIZE, parsedWidth)));
+  const nextHeight = Math.round(Math.min(MAX_WINDOW_SIZE + 80, Math.max(MIN_WINDOW_SIZE, parsedHeight)));
   const bounds = mainWindow.getBounds();
   let nextX = bounds.x + Math.round((bounds.width - nextWidth) / 2);
   let nextY = bounds.y + Math.round((bounds.height - nextHeight) / 2);
@@ -882,7 +888,13 @@ function moveWindowTo(x, y) {
     return;
   }
 
-  mainWindow.setPosition(Math.round(x), Math.round(y), false);
+  const nextX = Number(x);
+  const nextY = Number(y);
+  if (!Number.isFinite(nextX) || !Number.isFinite(nextY)) {
+    return;
+  }
+
+  mainWindow.setPosition(Math.round(nextX), Math.round(nextY), false);
 }
 
 function showPetMenu(currentPetId) {

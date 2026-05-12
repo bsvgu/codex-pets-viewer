@@ -117,6 +117,10 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function isFiniteNumber(value) {
+  return Number.isFinite(Number(value));
+}
+
 function readSizeScale() {
   const stored = Number.parseFloat(localStorage.getItem("size-scale") || "1");
 
@@ -382,6 +386,10 @@ async function startMoveDrag(event) {
     return;
   }
 
+  if (!isFiniteNumber(event.screenX) || !isFiniteNumber(event.screenY)) {
+    return;
+  }
+
   const press = {
     pointerId: event.pointerId,
     startX: event.screenX,
@@ -479,6 +487,10 @@ els.stage.addEventListener("pointermove", (event) => {
     return;
   }
 
+  if (!isFiniteNumber(event.screenX) || !isFiniteNumber(event.screenY)) {
+    return;
+  }
+
   if (
     Math.abs(event.screenX - spritePress.startX) > CLICK_MOVE_THRESHOLD ||
     Math.abs(event.screenY - spritePress.startY) > CLICK_MOVE_THRESHOLD
@@ -490,10 +502,11 @@ els.stage.addEventListener("pointermove", (event) => {
     return;
   }
 
-  window.petViewer.moveTo(
-    moveDrag.windowX + event.screenX - moveDrag.startX,
-    moveDrag.windowY + event.screenY - moveDrag.startY
-  );
+  const nextX = moveDrag.windowX + event.screenX - moveDrag.startX;
+  const nextY = moveDrag.windowY + event.screenY - moveDrag.startY;
+  if (isFiniteNumber(nextX) && isFiniteNumber(nextY)) {
+    window.petViewer.moveTo(nextX, nextY);
+  }
 });
 els.stage.addEventListener("pointerup", (event) => {
   handleSpritePointerUp(event);
