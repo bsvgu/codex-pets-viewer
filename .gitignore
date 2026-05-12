@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-content/
 tools/
 *.log
 .codex-server-*.log

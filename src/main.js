@@ -1,4 +1,5 @@
 const fs = require("fs");
+const crypto = require("crypto");
 const https = require("https");
 const path = require("path");
 const { execFile } = require("child_process");
@@ -11,11 +12,15 @@ const MIN_WINDOW_SIZE = 110;
 const MAX_WINDOW_SIZE = 760;
 const REPO_FULL_NAME = "bsvgu/codex-pets-viewer";
 const RELEASES_LATEST_URL = `https://api.github.com/repos/${REPO_FULL_NAME}/releases/latest`;
+const CONTENT_RELEASE_TAG = "pets-content-stable";
+const CONTENT_RELEASE_URL = `https://api.github.com/repos/${REPO_FULL_NAME}/releases/tags/${CONTENT_RELEASE_TAG}`;
+const CONTENT_MANIFEST_ASSET = "pet-content-manifest.json";
 const UPDATE_STATE_FILE = "update-state.json";
 const ACTION_CONFIG_FILE = "action-config.json";
 
 let mainWindow;
 let settingsWindow;
+let petPickerWindow;
 
 function appPath(...parts) {
   return path.join(app.getAppPath(), ...parts);
@@ -31,6 +36,10 @@ function readJsonFile(filePath, fallback = null) {
   } catch {
     return fallback;
   }
+}
+
+function cleanPathSegment(value) {
+  return String(value || "").replace(/[^a-zA-Z0-9_.-]/g, "-").replace(/^-+|-+$/g, "");
 }
 
 function writeJsonFile(filePath, value) {
@@ -175,7 +184,7 @@ function getJson(url) {
           }
 
           try {
-            resolve(JSON.parse(body));
+            resolve(JSON.parse(body.replace(/^\uFEFF/, "")));
           } catch (error) {
             reject(error);
           }
@@ -186,6 +195,49 @@ function getJson(url) {
     request.setTimeout(12000, () => request.destroy(new Error("Update check timed out")));
     request.on("error", reject);
   });
+}
+
+function downloadFile(url, filePath) {
+  return new Promise((resolve, reject) => {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+
+    const request = https.get(
+      url,
+      {
+        headers: {
+          Accept: "application/octet-stream",
+          "User-Agent": "Codex-Pets-Viewer"
+        }
+      },
+      (response) => {
+        if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+          response.resume();
+          downloadFile(response.headers.location, filePath).then(resolve, reject);
+          return;
+        }
+
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          response.resume();
+          reject(new Error(`Download returned ${response.statusCode}`));
+          return;
+        }
+
+        const output = fs.createWriteStream(filePath);
+        response.pipe(output);
+        output.on("finish", () => output.close(resolve));
+        output.on("error", reject);
+      }
+    );
+
+    request.setTimeout(30000, () => request.destroy(new Error("Download timed out")));
+    request.on("error", reject);
+  });
+}
+
+function sha256File(filePath) {
+  const hash = crypto.createHash("sha256");
+  hash.update(fs.readFileSync(filePath));
+  return hash.digest("hex");
 }
 
 function findReleaseExe(assets = []) {
@@ -214,76 +266,331 @@ async function checkForUpdates() {
   };
 }
 
+function buildLocalPetVersionMap() {
+  const versions = new Map();
+
+  for (const pet of readPetsFromRoot(appPath("assets", "pets"), "bundled")) {
+    versions.set(pet.id, pet.version || "1.0.0");
+  }
+
+  for (const pet of readPetsFromRoot(userDataPath("pets"), "downloaded")) {
+    versions.set(pet.id, pet.version || "1.0.0");
+  }
+
+  return versions;
+}
+
+async function fetchContentManifest() {
+  const release = await getJson(CONTENT_RELEASE_URL);
+  const assets = release.assets || [];
+  const manifestAsset = assets.find((asset) => asset.name === CONTENT_MANIFEST_ASSET);
+
+  if (!manifestAsset) {
+    throw new Error(`${CONTENT_MANIFEST_ASSET} fehlt im Content-Release.`);
+  }
+
+  const manifest = await getJson(manifestAsset.browser_download_url);
+  return { release, manifest, assets };
+}
+
+async function checkContentUpdates() {
+  try {
+    const { release, manifest, assets } = await fetchContentManifest();
+    const currentVersion = app.getVersion() || packageJson.version;
+    const minimumAppVersion = manifest.minimumAppVersion || "1.0.0";
+
+    if (compareVersions(minimumAppVersion, currentVersion) > 0) {
+      return {
+        ok: true,
+        appTooOld: true,
+        minimumAppVersion,
+        updates: [],
+        releaseUrl: release.html_url
+      };
+    }
+
+    const localVersions = buildLocalPetVersionMap();
+    const assetsByName = new Map(assets.map((asset) => [asset.name, asset]));
+    const updates = (manifest.pets || [])
+      .map((pet) => {
+        const asset = assetsByName.get(pet.assetName);
+        const installedVersion = localVersions.get(pet.id) || null;
+        const needsInstall = !installedVersion || compareVersions(pet.version, installedVersion) > 0;
+
+        return {
+          id: pet.id,
+          displayName: pet.displayName || pet.id,
+          description: pet.description || "",
+          version: pet.version || "1.0.0",
+          installedVersion,
+          assetName: pet.assetName,
+          sha256: pet.sha256,
+          downloadUrl: asset?.browser_download_url || null,
+          missingAsset: !asset,
+          needsInstall
+        };
+      })
+      .filter((pet) => pet.needsInstall);
+
+    return {
+      ok: true,
+      appTooOld: false,
+      releaseUrl: release.html_url,
+      updates,
+      manifest
+    };
+  } catch (error) {
+    return { ok: false, error: error.message, updates: [] };
+  }
+}
+
+function resolveExtractedPetRoot(extractRoot) {
+  const directManifest = path.join(extractRoot, "pet.json");
+
+  if (fs.existsSync(directManifest)) {
+    return extractRoot;
+  }
+
+  const folders = fs
+    .readdirSync(extractRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory());
+
+  if (folders.length === 1) {
+    const nestedRoot = path.join(extractRoot, folders[0].name);
+    if (fs.existsSync(path.join(nestedRoot, "pet.json"))) {
+      return nestedRoot;
+    }
+  }
+
+  return null;
+}
+
+async function extractZip(zipPath, destinationPath) {
+  const safeZip = zipPath.replace(/'/g, "''");
+  const safeDestination = destinationPath.replace(/'/g, "''");
+  const result = await runPowerShell(
+    `Expand-Archive -LiteralPath '${safeZip}' -DestinationPath '${safeDestination}' -Force`,
+    30000
+  );
+
+  if (!result.ok) {
+    throw new Error("ZIP konnte nicht entpackt werden.");
+  }
+}
+
+function installExtractedPet(petRoot, expectedPet) {
+  const manifestPath = path.join(petRoot, "pet.json");
+  const manifest = readJsonFile(manifestPath);
+
+  if (!manifest) {
+    throw new Error("pet.json konnte nicht gelesen werden.");
+  }
+
+  const petId = manifest.id || expectedPet.id;
+  if (petId !== expectedPet.id) {
+    throw new Error(`Pet-ID stimmt nicht: ${petId}`);
+  }
+
+  const spritesheetPath = path.join(petRoot, manifest.spritesheetPath || "spritesheet.webp");
+  if (!fs.existsSync(spritesheetPath)) {
+    throw new Error("Spritesheet fehlt im Pet-Pack.");
+  }
+
+  const installRoot = userDataPath("pets", cleanPathSegment(expectedPet.id));
+  const nextManifest = {
+    ...manifest,
+    id: expectedPet.id,
+    displayName: manifest.displayName || expectedPet.displayName || expectedPet.id,
+    description: manifest.description || expectedPet.description || "",
+    version: expectedPet.version || manifest.version || "1.0.0"
+  };
+
+  fs.rmSync(installRoot, { recursive: true, force: true });
+  fs.mkdirSync(installRoot, { recursive: true });
+  fs.cpSync(petRoot, installRoot, { recursive: true });
+  writeJsonFile(path.join(installRoot, "pet.json"), nextManifest);
+}
+
+function notifyPetsChanged() {
+  mainWindow?.webContents.send("pets:changed");
+  petPickerWindow?.webContents.send("pets:changed");
+}
+
+async function installContentUpdates() {
+  const check = await checkContentUpdates();
+
+  if (!check.ok || check.appTooOld || !check.updates.length) {
+    return check;
+  }
+
+  const workRoot = path.join(app.getPath("temp"), `codex-pets-content-${Date.now()}`);
+  const installed = [];
+
+  try {
+    fs.mkdirSync(workRoot, { recursive: true });
+
+    for (const pet of check.updates) {
+      if (!pet.downloadUrl || pet.missingAsset) {
+        throw new Error(`Asset fehlt: ${pet.assetName}`);
+      }
+
+      const zipPath = path.join(workRoot, pet.assetName);
+      const extractRoot = path.join(workRoot, `${cleanPathSegment(pet.id)}-extract`);
+
+      await downloadFile(pet.downloadUrl, zipPath);
+
+      if (pet.sha256 && sha256File(zipPath).toLowerCase() !== String(pet.sha256).toLowerCase()) {
+        throw new Error(`Hash stimmt nicht: ${pet.displayName}`);
+      }
+
+      fs.mkdirSync(extractRoot, { recursive: true });
+      await extractZip(zipPath, extractRoot);
+
+      const petRoot = resolveExtractedPetRoot(extractRoot);
+      if (!petRoot) {
+        throw new Error(`Pet-Pack ungueltig: ${pet.displayName}`);
+      }
+
+      installExtractedPet(petRoot, pet);
+      installed.push(pet);
+    }
+  } catch (error) {
+    if (installed.length) {
+      notifyPetsChanged();
+    }
+
+    return { ok: false, error: error.message, installed };
+  } finally {
+    fs.rmSync(workRoot, { recursive: true, force: true });
+  }
+
+  notifyPetsChanged();
+  return { ok: true, installed, updates: [] };
+}
+
 async function checkForUpdatesAndNotify(manual = false) {
   if (!mainWindow) {
     return null;
   }
 
+  const resultState = {
+    app: null,
+    content: null
+  };
+
   try {
     const update = await checkForUpdates();
+    resultState.app = update;
 
-    if (!update.updateAvailable) {
-      if (manual) {
-        await dialog.showMessageBox(mainWindow, {
+    if (update.updateAvailable) {
+      const statePath = userDataPath(UPDATE_STATE_FILE);
+      const state = readJsonFile(statePath, {});
+
+      if (manual || state.lastNotifiedVersion !== update.latestVersion) {
+        const result = await dialog.showMessageBox(mainWindow, {
           type: "info",
-          title: "Update",
-          message: "Du hast die aktuelle Version.",
-          detail: `Installiert: ${update.currentVersion}`
+          title: "Update verfuegbar",
+          message: `Version ${update.latestVersion} ist verfuegbar.`,
+          detail: `Installiert: ${update.currentVersion}\n\nDie neue EXE wird ueber GitHub Releases verteilt.`,
+          buttons: ["EXE herunterladen", "Release ansehen", "Spaeter"],
+          defaultId: 0,
+          cancelId: 2
         });
+
+        writeJsonFile(statePath, {
+          ...state,
+          lastNotifiedVersion: update.latestVersion
+        });
+
+        if (result.response === 0) {
+          shell.openExternal(update.downloadUrl);
+        } else if (result.response === 1) {
+          shell.openExternal(update.releaseUrl);
+        }
       }
-
-      return update;
     }
+  } catch (error) {
+    resultState.app = { ok: false, error: error.message };
+  }
 
+  const content = await checkContentUpdates();
+  resultState.content = content;
+
+  if (content.ok && content.appTooOld && manual) {
+    await dialog.showMessageBox(mainWindow, {
+      type: "warning",
+      title: "Content Update",
+      message: "Content-Updates brauchen eine neuere App.",
+      detail: `Mindestens benoetigt: ${content.minimumAppVersion}`
+    });
+    return resultState;
+  }
+
+  if (content.ok && content.updates.length) {
+    const signature = content.updates.map((pet) => `${pet.id}@${pet.version}`).join("|");
     const statePath = userDataPath(UPDATE_STATE_FILE);
     const state = readJsonFile(statePath, {});
 
-    if (!manual && state.lastNotifiedVersion === update.latestVersion) {
-      return update;
-    }
-
-    const result = await dialog.showMessageBox(mainWindow, {
-      type: "info",
-      title: "Update verfuegbar",
-      message: `Version ${update.latestVersion} ist verfuegbar.`,
-      detail: `Installiert: ${update.currentVersion}\n\nDie neue EXE wird ueber GitHub Releases verteilt.`,
-      buttons: ["EXE herunterladen", "Release ansehen", "Spaeter"],
-      defaultId: 0,
-      cancelId: 2
-    });
-
-    writeJsonFile(statePath, {
-      ...state,
-      lastNotifiedVersion: update.latestVersion
-    });
-
-    if (result.response === 0) {
-      shell.openExternal(update.downloadUrl);
-    } else if (result.response === 1) {
-      shell.openExternal(update.releaseUrl);
-    }
-
-    return update;
-  } catch (error) {
-    if (manual) {
-      await dialog.showMessageBox(mainWindow, {
-        type: "warning",
-        title: "Update",
-        message: "Update-Check fehlgeschlagen.",
-        detail: error.message
+    if (manual || state.lastContentSignature !== signature) {
+      const names = content.updates.map((pet) => `${pet.displayName} ${pet.version}`).join("\n");
+      const result = await dialog.showMessageBox(mainWindow, {
+        type: "info",
+        title: "Pet Updates verfuegbar",
+        message: `${content.updates.length} Pet-Update(s) verfuegbar.`,
+        detail: names,
+        buttons: ["Installieren", "Spaeter"],
+        defaultId: 0,
+        cancelId: 1
       });
-    }
 
-    return { ok: false, error: error.message };
+      writeJsonFile(statePath, {
+        ...state,
+        lastContentSignature: signature
+      });
+
+      if (result.response === 0) {
+        const install = await installContentUpdates();
+        resultState.contentInstall = install;
+
+        if (manual || install.installed?.length) {
+          await dialog.showMessageBox(mainWindow, {
+            type: install.ok ? "info" : "warning",
+            title: "Pet Updates",
+            message: install.ok ? "Pet-Updates installiert." : "Pet-Updates fehlgeschlagen.",
+            detail: install.ok
+              ? `${install.installed?.length || 0} Pet(s) installiert.`
+              : install.error || "Unbekannter Fehler."
+          });
+        }
+      }
+    }
+  } else if (manual) {
+    const appInfo = resultState.app?.ok === false
+      ? `App-Update-Check fehlgeschlagen: ${resultState.app.error}`
+      : resultState.app?.updateAvailable
+        ? `App-Version ${resultState.app.latestVersion} ist verfuegbar.`
+        : `Installiert: ${resultState.app?.currentVersion || app.getVersion() || packageJson.version}`;
+    const contentInfo = content.ok
+      ? "Keine Pet-Updates verfuegbar."
+      : `Pet-Update-Check fehlgeschlagen: ${content.error}`;
+
+    await dialog.showMessageBox(mainWindow, {
+      type: content.ok && resultState.app?.ok !== false ? "info" : "warning",
+      title: "Update",
+      message: content.ok && !resultState.app?.updateAvailable ? "Du hast die aktuelle Version." : "Update-Check abgeschlossen.",
+      detail: `${appInfo}\n${contentInfo}`
+    });
   }
+
+  return resultState;
 }
 
-function runPowerShell(script) {
+function runPowerShell(script, timeout = 8000) {
   return new Promise((resolve) => {
     execFile(
       "powershell.exe",
       ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
-      { windowsHide: true, timeout: 8000 },
+      { windowsHide: true, timeout },
       (error, stdout) => {
         resolve({ ok: !error, output: String(stdout || "").trim() });
       }
@@ -434,6 +741,18 @@ function getSettingsWindowBounds() {
   };
 }
 
+function getCenteredWindowBounds(width, height) {
+  const display = mainWindow ? screen.getDisplayMatching(mainWindow.getBounds()) : screen.getPrimaryDisplay();
+  const area = display.workArea;
+
+  return {
+    width,
+    height,
+    x: area.x + Math.round((area.width - width) / 2),
+    y: area.y + Math.round((area.height - height) / 2)
+  };
+}
+
 function openSettingsWindow() {
   if (settingsWindow) {
     if (settingsWindow.isMinimized()) {
@@ -472,6 +791,46 @@ function openSettingsWindow() {
     settingsWindow?.close();
   });
   settingsWindow.focus();
+}
+
+function openPetPickerWindow(currentPetId = "") {
+  if (petPickerWindow) {
+    if (petPickerWindow.isMinimized()) {
+      petPickerWindow.restore();
+    }
+
+    petPickerWindow.show();
+    petPickerWindow.focus();
+    petPickerWindow.webContents.send("pet-picker:current", currentPetId);
+    return;
+  }
+
+  petPickerWindow = new BrowserWindow({
+    ...getCenteredWindowBounds(640, 560),
+    minWidth: 520,
+    minHeight: 420,
+    title: "Pet aendern",
+    backgroundColor: "#f6f7f9",
+    alwaysOnTop: true,
+    show: true,
+    webPreferences: {
+      preload: appPath("src", "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  petPickerWindow.setMenuBarVisibility(false);
+  petPickerWindow.on("closed", () => {
+    petPickerWindow = null;
+  });
+  petPickerWindow.loadFile(appPath("src", "pet-picker.html"), {
+    query: { currentPetId }
+  }).catch((error) => {
+    dialog.showErrorBox("Pet aendern", `Pet-Auswahl konnte nicht geoeffnet werden:\n${error.message}`);
+    petPickerWindow?.close();
+  });
+  petPickerWindow.focus();
 }
 
 function setWindowSize(width, height = width, anchor = "center") {
@@ -530,16 +889,10 @@ function showPetMenu(currentPetId) {
     return;
   }
 
-  const pets = readPets();
   const template = [
     {
       label: "Pet aendern",
-      submenu: pets.map((pet) => ({
-        label: pet.displayName,
-        type: "radio",
-        checked: pet.id === currentPetId,
-        click: () => mainWindow.webContents.send("pet:select", pet.id)
-      }))
+      click: () => openPetPickerWindow(currentPetId)
     },
     { type: "separator" },
     {
@@ -601,12 +954,19 @@ if (!gotLock) {
     ipcMain.handle("action:run", () => runConfiguredAction());
     ipcMain.handle("pets:list", () => readPets());
     ipcMain.handle("updates:check", () => checkForUpdates());
+    ipcMain.handle("content:check", () => checkContentUpdates());
+    ipcMain.handle("content:install", () => installContentUpdates());
     ipcMain.handle("window:get-bounds", () => mainWindow?.getBounds() || null);
     ipcMain.on("window:close", () => app.quit());
     ipcMain.on("window:minimize", () => mainWindow?.minimize());
     ipcMain.on("window:move-to", (_event, x, y) => moveWindowTo(x, y));
     ipcMain.handle("window:set-size", (_event, width, height, anchor) => setWindowSize(width, height, anchor));
     ipcMain.on("pet:show-menu", (_event, currentPetId) => showPetMenu(currentPetId));
+    ipcMain.on("pet-picker:open", (_event, currentPetId) => openPetPickerWindow(currentPetId));
+    ipcMain.on("pet:select", (_event, petId) => {
+      mainWindow?.webContents.send("pet:select", petId);
+      petPickerWindow?.close();
+    });
     ipcMain.on("settings:open", () => openSettingsWindow());
 
     createWindow();

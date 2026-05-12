@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' file:; style-src 'self' 'unsafe-inline'; script-src 'self';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet aendern</title>
+    <link rel="stylesheet" href="./pet-picker.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Pet aendern</h1>
+          <p>Waehle ein geladenes Pet aus.</p>
+        </div>
+        <button id="refresh" type="button">Aktualisieren</button>
+      </header>
+
+      <section id="grid" class="grid" aria-label="Pets"></section>
+      <p id="empty" hidden>Keine Pets gefunden.</p>
+    </main>
+    <script src="./pet-picker.js"></script>
+  </body>
+</html>

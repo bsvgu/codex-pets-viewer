@@ -330,6 +330,10 @@ function handleSpritePointerUp(event) {
 }
 
 async function boot() {
+  await refreshPets(localStorage.getItem("selected-pet-id"));
+}
+
+async function refreshPets(preferredPetId = currentPet()?.id || localStorage.getItem("selected-pet-id")) {
   pets = await window.petViewer.getPets();
   resizeToScale(sizeScale);
 
@@ -339,8 +343,10 @@ async function boot() {
     return;
   }
 
-  const storedPetId = localStorage.getItem("selected-pet-id");
-  const storedIndex = pets.findIndex((pet) => pet.id === storedPetId);
+  els.empty.hidden = true;
+  els.sprite.hidden = false;
+
+  const storedIndex = pets.findIndex((pet) => pet.id === preferredPetId);
   setPetByIndex(storedIndex >= 0 ? storedIndex : 0);
 }
 
@@ -431,6 +437,7 @@ window.addEventListener("keydown", (event) => {
 });
 
 window.petViewer.onSelectPet(setPetById);
+window.petViewer.onPetsChanged(() => refreshPets());
 window.petViewer.onNextPet(() => setPetByIndex(petIndex + 1));
 window.petViewer.onNextAnimation(() => nextAnimation(false));
 
