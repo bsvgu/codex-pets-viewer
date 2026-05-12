@@ -2,5 +2,372 @@
   "id": "chopper",
   "displayName": "Chopper",
   "description": "A cute chibi pixel-art reindeer doctor Codex pet with a pink hat, blue nose, tiny antlers, and shy cheerful energy.",
-  "spritesheetPath": "spritesheet.webp"
+  "spritesheetPath": "spritesheet.webp",
+  "version": "1.0.1",
+  "animations": [
+    {
+      "id": "idle",
+      "loops": 3,
+      "sequence": [
+        {
+          "row": 0,
+          "col": 0,
+          "duration": 280
+        },
+        {
+          "row": 0,
+          "col": 1,
+          "duration": 130
+        },
+        {
+          "row": 0,
+          "col": 2,
+          "duration": 110
+        },
+        {
+          "row": 0,
+          "col": 3,
+          "duration": 140
+        },
+        {
+          "row": 0,
+          "col": 4,
+          "duration": 200
+        },
+        {
+          "row": 0,
+          "col": 5,
+          "duration": 320
+        },
+        {
+          "row": 0,
+          "col": 0,
+          "duration": 140
+        },
+        {
+          "row": 0,
+          "col": 1,
+          "duration": 140
+        },
+        {
+          "row": 0,
+          "col": 2,
+          "duration": 140
+        },
+        {
+          "row": 0,
+          "col": 3,
+          "duration": 140
+        },
+        {
+          "row": 0,
+          "col": 4,
+          "duration": 200
+        },
+        {
+          "row": 0,
+          "col": 5,
+          "duration": 140
+        }
+      ]
+    },
+    {
+      "id": "waiting",
+      "loops": 2,
+      "sequence": [
+        {
+          "row": 6,
+          "col": 0,
+          "duration": 150
+        },
+        {
+          "row": 6,
+          "col": 1,
+          "duration": 150
+        },
+        {
+          "row": 6,
+          "col": 2,
+          "duration": 150
+        },
+        {
+          "row": 6,
+          "col": 3,
+          "duration": 150
+        },
+        {
+          "row": 6,
+          "col": 4,
+          "duration": 150
+        },
+        {
+          "row": 6,
+          "col": 5,
+          "duration": 260
+        }
+      ]
+    },
+    {
+      "id": "waving",
+      "loops": 2,
+      "sequence": [
+        {
+          "row": 3,
+          "col": 0,
+          "duration": 140
+        },
+        {
+          "row": 3,
+          "col": 1,
+          "duration": 140
+        },
+        {
+          "row": 3,
+          "col": 2,
+          "duration": 140
+        },
+        {
+          "row": 3,
+          "col": 3,
+          "duration": 200
+        },
+        {
+          "row": 3,
+          "col": 1,
+          "duration": 140
+        }
+      ]
+    },
+    {
+      "id": "jumping",
+      "loops": 2,
+      "sequence": [
+        {
+          "row": 4,
+          "col": 0,
+          "duration": 140
+        },
+        {
+          "row": 4,
+          "col": 1,
+          "duration": 140
+        },
+        {
+          "row": 4,
+          "col": 3,
+          "duration": 140
+        },
+        {
+          "row": 4,
+          "col": 4,
+          "duration": 280
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "loops": 2,
+      "sequence": [
+        {
+          "row": 8,
+          "col": 0,
+          "duration": 150
+        },
+        {
+          "row": 8,
+          "col": 1,
+          "duration": 150
+        },
+        {
+          "row": 8,
+          "col": 2,
+          "duration": 150
+        },
+        {
+          "row": 8,
+          "col": 3,
+          "duration": 150
+        },
+        {
+          "row": 8,
+          "col": 4,
+          "duration": 150
+        },
+        {
+          "row": 8,
+          "col": 5,
+          "duration": 280
+        }
+      ]
+    },
+    {
+      "id": "running",
+      "loops": 2,
+      "sequence": [
+        {
+          "row": 7,
+          "col": 0,
+          "duration": 140
+        },
+        {
+          "row": 7,
+          "col": 1,
+          "duration": 120
+        },
+        {
+          "row": 7,
+          "col": 2,
+          "duration": 120
+        },
+        {
+          "row": 7,
+          "col": 3,
+          "duration": 120
+        },
+        {
+          "row": 7,
+          "col": 4,
+          "duration": 220
+        }
+      ]
+    },
+    {
+      "id": "running-right",
+      "loops": 1,
+      "sequence": [
+        {
+          "row": 1,
+          "col": 0,
+          "duration": 120
+        },
+        {
+          "row": 1,
+          "col": 1,
+          "duration": 120
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "duration": 120
+        },
+        {
+          "row": 1,
+          "col": 3,
+          "duration": 120
+        },
+        {
+          "row": 1,
+          "col": 4,
+          "duration": 120
+        },
+        {
+          "row": 1,
+          "col": 5,
+          "duration": 120
+        },
+        {
+          "row": 1,
+          "col": 6,
+          "duration": 120
+        },
+        {
+          "row": 1,
+          "col": 7,
+          "duration": 170
+        }
+      ]
+    },
+    {
+      "id": "running-left",
+      "loops": 1,
+      "sequence": [
+        {
+          "row": 2,
+          "col": 0,
+          "duration": 120
+        },
+        {
+          "row": 2,
+          "col": 1,
+          "duration": 120
+        },
+        {
+          "row": 2,
+          "col": 2,
+          "duration": 120
+        },
+        {
+          "row": 2,
+          "col": 3,
+          "duration": 120
+        },
+        {
+          "row": 2,
+          "col": 4,
+          "duration": 120
+        },
+        {
+          "row": 2,
+          "col": 5,
+          "duration": 120
+        },
+        {
+          "row": 2,
+          "col": 6,
+          "duration": 120
+        },
+        {
+          "row": 2,
+          "col": 7,
+          "duration": 170
+        }
+      ]
+    },
+    {
+      "id": "failed",
+      "loops": 1,
+      "sequence": [
+        {
+          "row": 5,
+          "col": 0,
+          "duration": 160
+        },
+        {
+          "row": 5,
+          "col": 1,
+          "duration": 500
+        },
+        {
+          "row": 5,
+          "col": 2,
+          "duration": 160
+        },
+        {
+          "row": 5,
+          "col": 3,
+          "duration": 300
+        },
+        {
+          "row": 5,
+          "col": 4,
+          "duration": 300
+        },
+        {
+          "row": 5,
+          "col": 5,
+          "duration": 300
+        },
+        {
+          "row": 5,
+          "col": 6,
+          "duration": 160
+        },
+        {
+          "row": 5,
+          "col": 7,
+          "duration": 500
+        }
+      ]
+    }
+  ]
 }
